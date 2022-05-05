@@ -1,4 +1,4 @@
-import {FiberNode, NodeTypes} from './types'
+import {EffectTags, FiberNode, NodeTypes} from './types'
 
 /**
  * Creating node containing only text
@@ -8,10 +8,10 @@ import {FiberNode, NodeTypes} from './types'
 export function createTextNode(text: string): FiberNode {
     const textNode: FiberNode = {
         type: NodeTypes.textNode,
+        effectTag: EffectTags.create,
         textValue: text,
         children: [],
     }
-    console.log(textNode)
     return textNode
 }
 
@@ -26,15 +26,15 @@ export function createNode(
     type: NodeTypes,
     props: {[key: string]: any},
     ...children: FiberNode[]
-) {
+): FiberNode {
     const node: FiberNode = {
         type,
         props,
+        effectTag: EffectTags.create,
         children: children.map(el =>
             typeof el === 'string' ? createTextNode(el) : el
         ),
     }
-    // console.log(node)
     return node
 }
 
@@ -44,9 +44,6 @@ export function createNode(
  * @return {HTMLElement} domNode
  */
 export function createDomNode(node: FiberNode): HTMLElement | Text {
-    if (node.type === NodeTypes.textNode) {
-        console.log(node)
-    }
     if (node.type === NodeTypes.textNode && node.textValue) {
         const textDomNode = document.createTextNode(node.textValue)
         return textDomNode
@@ -55,6 +52,7 @@ export function createDomNode(node: FiberNode): HTMLElement | Text {
     const domNode = document.createElement(node.type)
     if (node.props) {
         Object.entries(node.props).map(([propName, propValue]) => {
+            // TODO: fix it
             ;(domNode as any)[propName] = propValue
         })
     }
