@@ -1,22 +1,24 @@
-import {createNode} from '../create-functions'
+// import {createNode} from '../create-functions'
+
+type NodeType = {
+    type: 'closing' | 'self-closing' | 'element' | 'value'
+    name: string
+    length: number
+    value: string
+    props: {[key: string]: any}
+    children: NodeType[]
+}
 
 // eslint-disable-next-line require-jsdoc
-export default function parseElement(template: string) {
-    // let match = template.match(/<(\w+)/)
+export default function parseElement(
+    template: string,
+    lastOpenedTagName: string = ''
+) {
     const openingTag = /^\n*?[ \t]*?<(\w+)/
-    console.log(template)
     const endOpeningTag = />/
 
-    type nodeType = {
-        type: string
-        name: string
-        length: number
-        value: string
-        props: {[key: string]: any}
-        children: nodeType[]
-    }
-    const node: nodeType = {
-        type: '',
+    const node: NodeType = {
+        type: 'element',
         name: '',
         length: 0,
         value: '',
@@ -24,28 +26,28 @@ export default function parseElement(template: string) {
         children: [],
     }
     let match = template.match(openingTag)
+    const closingTag = new RegExp(`[ \t]*?</${lastOpenedTagName}>`)
+
     if (!match) {
-        // return parseValue(template)
-        node.type = 'value'
-        node.value = template
-        node.length = template.length
+        // if no opening tag we should find closing tag
+        // and between them parse value
+        match = template.match(closingTag)
+        if (!match) {
+            throw new Error('parsing error: no closing tag')
+        }
+        const nodeValue = template.slice(0, match.index!).trim()
+        node.length = match.index! + match[0].length
+        node.type = 'closing'
+        node.value = nodeValue
         return node
     }
+
     let nodeLength = match.index! + match[0].length
     node.name = match[1]
-    const closingTag = new RegExp(`[ \t]*?</${node.name}>`)
-    const selfClosingTag = new RegExp(`<${node.name}.*\/>`)
-    const closingTagMatch = template.match(selfClosingTag)
-    if (closingTagMatch) {
-        node.props = parseProps(
-            template.slice(match.index! + match[0].length, -3)
-        )
-        nodeLength += node.props.length + 3
-        node.length = nodeLength
-        return node
-    }
+
     template = template.slice(match.index! + match[0].length)
 
+    // find the end of opened tag
     match = template.match(endOpeningTag)
     if (!match) {
         throw new Error('parsing error: no end of opening tag')
@@ -53,95 +55,40 @@ export default function parseElement(template: string) {
 
     nodeLength += match.index! + match[0].length
     const propsStr = template.slice(0, match.index!)
+
     node.props = parseProps(propsStr)
-    nodeLength += propsStr.length
-    template = template.slice(match.index! + 1)
-    match = template.match(closingTag)
-    if (!match) {
-        throw new Error('parsing error: tag was not closed')
+
+    // if self-closing tag
+    if (template.slice(match.index! - 1, match.index! + 1) === '/>') {
+        node.type = 'self-closing'
+        node.length = nodeLength
+        return node
     }
-    template = template.slice(0, match.index!)
-    nodeLength += match.index! + match[0].length
-    while (template.trim().length) {
-        const childNode = parseElement(template)
-        node.children.push(childNode)
+
+    // nodeLength += propsStr.length
+    template = template.slice(match.index! + 1)
+
+    let childNode = parseElement(template, node.name)
+    while (childNode.type !== 'closing') {
         template = template.slice(childNode.length)
+        node.children.push(childNode)
+        nodeLength += childNode.length
+        childNode = parseElement(template, node.name)
+    }
+
+    nodeLength += childNode.length
+    if (childNode.value.length) {
+        node.children.push({
+            type: 'value',
+            name: '',
+            length: childNode.length,
+            value: childNode.value,
+            props: {},
+            children: [],
+        })
     }
     node.length = nodeLength
     return node
-    // new RegExp(`^\n*?[ \t]*?</${node.name}>`)
-    //     let match = template.match(
-    //         /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\|,.? ]*(?!<|\n)/
-    //     )
-    //     // const matchCloseTag = template.match(/<\//)
-    //     // console.log(template)
-
-    //     const node: {[key: string]: any} = {
-    //         length: 0,
-    //         props: {},
-    //         children: [],
-    //         type: 'element',
-    //     }
-    //     if (match) {
-    //         // if no opening tag it means there is a content that in template
-    //         template = template.split('<')[0]
-    //         return parseValue(template)
-    //     }
-    //     const openingTag = /^\n*?[ \t]*?<(\w+).?(?!>)/
-    //     const closingTag = /^\n*?[ \t]*?<\/(\w+).?(?!>)/
-    //     match = template.match(closingTag)
-    //     if (match) {
-    //         node.length = match[0].length
-    //         node.type = 'closingTag'
-    //         return node
-    //     }
-
-    //     match = template.match(/<(\w+)/)
-    //     node.name = match![1]
-    //     console.log(node.name)
-    //     let length = match!.index! + match![0].length
-    //     template = template.slice(length)
-    //     // console.log(template)
-    //     node.length += length
-
-    //     // self close tag
-    //     match = template.match(/^ (.+)?(?=\/>)/)
-    //     if (match) {
-    //         node.length += match.index! + match[0].length
-    //         return node
-    //     }
-
-    //     match = template.match(/>/)
-
-    //     if (!match) return node
-
-    //     length = match.index! + 1
-    //     template = template.slice(length)
-    //     console.log(template)
-    //     node.length += length
-
-    //     let child: {[key: string]: any} = {}
-    //     child = parseElement(template)
-
-    //     // while (child.type === types.element || child.value) {
-    //     while (child.type === 'element' || child.value) {
-    //         length = child.length
-    //         console.log(node.name, template)
-    //         template = template.slice(length)
-    //         console.log(template)
-    //         node.length += length
-    //         node.children.push(child)
-    //         child = parseElement(template)
-    //     }
-
-    //     match = template.match(new RegExp(`^\n*?[ \t]*?</${node.name}>`))
-
-    //     if (!match) {
-    //         return node
-    //     }
-
-    //     node.length += match[0].length
-    //     return node
 }
 
 // eslint-disable-next-line require-jsdoc
@@ -152,7 +99,6 @@ function parseProps(str: string) {
     const props: {[key: string]: any} = {}
     // regex to get attributes from tag
     const matchNextProp = () =>
-        // str.match(/ *\w+="(?:.*[^\\]")?/) || str.match(/ *\w+/)
         str.match(/ *\w+=\".+?(?=")"/) || str.match(/ *\w+/)
 
     let match = matchNextProp()
