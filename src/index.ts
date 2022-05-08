@@ -1,3 +1,4 @@
 export * from './create-functions'
-export * from './main'
+export * from './reactivity/index'
 export * from './types'
+export * from './template-engine'
