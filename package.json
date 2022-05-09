@@ -9,7 +9,8 @@
   "scripts": {
     "build": "parcel build",
     "watch": "parcel watch",
-    "demo": "parcel demo/index.html"
+    "demo": "parcel demo/index.html",
+    "parse": "npx ts-node src/template-engine/index.ts"
   },
   "author": "Mikhail Bogomazov",
   "license": "ISC",
