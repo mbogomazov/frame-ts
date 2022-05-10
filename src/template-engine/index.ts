@@ -1,22 +1,25 @@
-import {createNode} from '../create-functions'
-import {FiberNode} from '../types'
+// import AppComponent from '../app'
+import {createNode} from '../create-functions';
+import {CompNode, Component, FiberNode, PropsType} from '../types';
 
 type TagNodeType = {
-    type: 'closing' | 'self-closing' | 'element' | 'textValue' | 'funcValue'
-    name: string
-    length: number
-    value: string | Function
-    props: {[key: string]: any}
-    children: TagNodeType[]
-}
+    type: 'self-closing' | 'element' | 'textValue' | 'funcValue' | 'component';
+    name: string;
+    length: number;
+    value: string | Function;
+    props: PropsType;
+    children: TagNodeType[];
+    isClosing?: boolean;
+};
 
 // eslint-disable-next-line require-jsdoc
 export default function parseElement(
     template: string,
-    lastOpenedTagName: string = ''
+    lastOpenedTagName: string = '',
+    imports?: {[key: string]: typeof Component}
 ) {
-    const openingTag = /^\n*?[ \t]*?<(\w+)/
-    const endOpeningTag = />/
+    const openingTag = /^\n*?[ \t]*?<(\w+)/;
+    const endOpeningTag = />/;
 
     const node: TagNodeType = {
         type: 'element',
@@ -25,20 +28,20 @@ export default function parseElement(
         value: '',
         props: {},
         children: [],
-    }
-    let match = template.match(openingTag)
-    const closingTag = new RegExp(`[ \t]*?</${lastOpenedTagName}>`)
+    };
+    let match = template.match(openingTag);
+    const closingTag = new RegExp(`[ \t]*?</${lastOpenedTagName}>`);
 
     if (!match) {
         // if no opening tag we should find closing tag
         // and between them parse value
-        match = template.match(closingTag)
+        match = template.match(closingTag);
         if (!match) {
-            throw new Error('parsing error: no closing tag')
+            throw new Error('parsing error: no closing tag');
         }
-        const nodeValue = parseValue(template.slice(0, match.index!).trim())
+        const nodeValue = parseValue(template.slice(0, match.index!).trim());
         if (nodeValue.length === 0) {
-            node.value = ''
+            node.value = '';
         } else {
             for (const childNodeContent of nodeValue) {
                 if (typeof childNodeContent === 'string') {
@@ -49,7 +52,7 @@ export default function parseElement(
                         props: {},
                         length: childNodeContent.length,
                         children: [],
-                    })
+                    });
                 } else {
                     node.children.push({
                         type: 'funcValue',
@@ -58,44 +61,45 @@ export default function parseElement(
                         props: {},
                         length: NaN,
                         children: [],
-                    })
+                    });
                 }
             }
         }
-        node.length = match.index! + match[0].length
-        node.type = 'closing'
+        node.length = match.index! + match[0].length;
+        node.type = 'element';
+        node.isClosing = true;
 
-        return node
+        return node;
     }
 
-    let nodeLength = match.index! + match[0].length
-    node.name = match[1]
+    let nodeLength = match.index! + match[0].length;
+    node.name = match[1];
 
-    template = template.slice(match.index! + match[0].length)
+    template = template.slice(match.index! + match[0].length);
 
     // find the end of opened tag
-    match = template.match(endOpeningTag)
+    match = template.match(endOpeningTag);
     if (!match) {
-        throw new Error('parsing error: no end of opening tag')
+        throw new Error('parsing error: no end of opening tag');
     }
 
-    let templateCopy = template
-    let cuttedSymbols = 0
+    let templateCopy = template;
+    let cuttedSymbols = 0;
     // check if we found '=>' in arrow function
     while (match && templateCopy[match.index! - 1] === '=') {
-        templateCopy = templateCopy.slice(match!.index! + 1)
-        cuttedSymbols += match!.index! + 1
-        match = templateCopy.match(endOpeningTag)
+        templateCopy = templateCopy.slice(match!.index! + 1);
+        cuttedSymbols += match!.index! + 1;
+        match = templateCopy.match(endOpeningTag);
     }
 
     if (!match) {
-        throw new Error('parsing error: no end of opening tag')
+        throw new Error('parsing error: no end of opening tag');
     }
 
-    nodeLength += match.index! + match[0].length + cuttedSymbols
-    const propsStr = template.slice(0, match.index! + cuttedSymbols)
+    nodeLength += match.index! + match[0].length + cuttedSymbols;
+    const propsStr = template.slice(0, match.index! + cuttedSymbols);
 
-    node.props = parseProps(propsStr)
+    node.props = parseProps(propsStr);
 
     // if self-closing tag
     if (
@@ -104,123 +108,132 @@ export default function parseElement(
             match.index! + cuttedSymbols + 1
         ) === '/>'
     ) {
-        node.type = 'self-closing'
-        node.length = nodeLength
-        return node
+        node.type = 'self-closing';
+        if (imports && node.name in imports) {
+            node.value = imports[node.name];
+            node.type = 'component';
+        }
+        node.isClosing = true;
+        node.length = nodeLength;
+        return node;
     }
 
     // nodeLength += propsStr.length
-    template = template.slice(match.index! + cuttedSymbols + 1)
+    template = template.slice(match.index! + cuttedSymbols + 1);
 
-    let childNode = parseElement(template, node.name)
-    while (childNode.type !== 'closing') {
-        template = template.slice(childNode.length)
-        node.children.push(childNode)
-        nodeLength += childNode.length
-        childNode = parseElement(template, node.name)
+    let childNode = parseElement(template, node.name, imports);
+    while (!childNode.isClosing) {
+        template = template.slice(childNode.length);
+        node.children.push(childNode);
+        nodeLength += childNode.length;
+        childNode = parseElement(template, node.name, imports);
     }
 
-    nodeLength += childNode.length
+    nodeLength += childNode.length;
     if (childNode.value.length) {
-        node.children.push(childNode)
+        node.children.push(childNode);
     } else if (childNode.children.length) {
-        node.children.push(...childNode.children)
+        node.children.push(...childNode.children);
     }
-    node.length = nodeLength
-    return node
+    node.length = nodeLength;
+    return node;
 }
 
 // TODO: write it
 // (string | FiberNode)[]
 // eslint-disable-next-line require-jsdoc
 function parseValue(str: string) {
-    const curlyBracets = /{[^}]*}/
-    let match = str.match(curlyBracets)
-    const children: (string | Function)[] = []
+    const curlyBracets = /{[^}]*}/;
+    let match = str.match(curlyBracets);
+    const children: (string | Function)[] = [];
     while (match) {
-        const prevTextNode = str.slice(0, match.index!)
+        const prevTextNode = str.slice(0, match.index!);
         if (prevTextNode.length) {
-            children.push(prevTextNode)
+            children.push(prevTextNode);
         }
         const funcNodeStr = str
             .slice(match.index! + 1, match.index! + match[0].length - 1)
-            .trim()
-        const funcNode = createFuncValue(funcNodeStr)
-        children.push(funcNode)
-        str = str.slice(match.index! + match[0].length)
-        match = str.match(curlyBracets)
+            .trim();
+        const funcNode = createFuncValue(funcNodeStr);
+        children.push(funcNode);
+        str = str.slice(match.index! + match[0].length);
+        match = str.match(curlyBracets);
     }
     if (str.length) {
-        children.push(str)
+        children.push(str);
     }
-    return children
+    return children;
 }
 
 // eslint-disable-next-line require-jsdoc
 function parseProps(str: string) {
-    const props: {[key: string]: any} = {}
+    const props: PropsType = {};
     // regex to get attributes from tag
     const matchNextProp = () =>
-        str.match(/ *\w+=\".+?(?=")"/) || str.match(/ *\w+/)
+        str.match(/ *\w+=\".+?(?=")"/) || str.match(/ *\w+/);
 
-    let match = matchNextProp()
+    let match = matchNextProp();
     if (!match) {
-        return props
+        return props;
     }
 
-    // console.log(match, str)
     while (match) {
-        const propStr = match[0]
-        let [propKey, ...propValues] = propStr.split('=')
-        propKey = propKey.trim()
-        let propValue: string | boolean | Function = propValues.join('=')
+        const propStr = match[0];
+        let [propKey, ...propValues] = propStr.split('=');
+        propKey = propKey.trim();
+        let propValue: string | boolean | Function = propValues.join('=');
         propValue =
             typeof propValue === 'string' && propValue.length
                 ? propValue.slice(1, -1)
-                : true
-        const curlyBracets = /{.*}/
+                : true;
+        const curlyBracets = /{.*}/;
 
         if (typeof propValue === 'string') {
-            const bracetsMatch = propValue.match(curlyBracets)
+            const bracetsMatch = propValue.match(curlyBracets);
             if (bracetsMatch) {
-                propValue = createFuncValue(bracetsMatch[0].slice(1, -1))
+                propValue = createFuncValue(bracetsMatch[0].slice(1, -1));
             }
         }
-        props[propKey] = propValue
+        props[propKey] = propValue;
         str =
-            str.slice(0, match.index) + str.slice(match.index! + propStr.length)
-        match = matchNextProp()
+            str.slice(0, match.index) +
+            str.slice(match.index! + propStr.length);
+        match = matchNextProp();
     }
 
-    return props
+    return props;
 }
 
 // eslint-disable-next-line require-jsdoc
 function createFuncValue(str: string) {
-    // eslint-disable-next-line no-new-wrappers
-    return new Function(
-        'props',
-        // eslint-disable-next-line no-new-wrappers
-        `return ${str}`
-    )
+    return new Function('props', `return ${str}`);
 }
 
 // eslint-disable-next-line require-jsdoc
 function convertTagNodeToFiberNode(tagNode: TagNodeType): FiberNode {
+    // if tag node has a value it means that node is component
+    let componentConstructor: typeof Component | undefined;
+    if (tagNode.type === 'component' && tagNode.value) {
+        componentConstructor = tagNode.value as typeof Component;
+    }
     const convertedNode = {
         type: tagNode.name,
         props: tagNode.props,
+        value: componentConstructor,
         children: tagNode.children.map(node =>
-            node.type === 'textValue' || node.type === 'funcValue'
+            ['funcValue', 'textValue'].includes(node.type)
                 ? node.value
+                : node.type === 'component'
+                ? ({compConstructor: node.value, props: node.props} as CompNode)
                 : convertTagNodeToFiberNode(node)
         ),
-    }
+    };
     return createNode(
         convertedNode.type,
         convertedNode.props,
+        componentConstructor,
         ...convertedNode.children
-    )
+    );
 }
 
 // example of template
@@ -245,8 +258,21 @@ function convertTagNodeToFiberNode(tagNode: TagNodeType): FiberNode {
 // `
 
 // eslint-disable-next-line require-jsdoc
-export function parseTemplate(template: string): FiberNode {
-    const rootNode = parseElement(template, '')
-    const rootFiberNode = convertTagNodeToFiberNode(rootNode)
-    return rootFiberNode
+export function parseTemplate(
+    template: string,
+    imports?: {[key: string]: typeof Component}
+): FiberNode {
+    const rootNode = parseElement(template, '', imports);
+    const rootFiberNode = convertTagNodeToFiberNode(rootNode);
+    return rootFiberNode;
 }
+
+// const templateStr = `
+// <div><App props="{props}" /></div>
+// `
+
+// console.log(
+//     parseTemplate(templateStr, {
+//         App: AppComponent,
+//     }).children[0].value
+// )
