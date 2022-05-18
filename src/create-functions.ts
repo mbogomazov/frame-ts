@@ -107,12 +107,14 @@ export function createDomNode(node: FiberNode): HTMLElement | Text {
         return computedTextDomNode;
     }
 
+    console.log(node.props, node);
     const domNode = document.createElement(node.type);
     if (node.props) {
         Object.entries(node.props).map(([propName, propValue]) => {
             // TODO: fix it
             if (typeof propValue === 'string') {
-                (domNode as any)[propName] = propValue;
+                domNode.setAttribute(propName, propValue);
+                console.log(domNode);
             }
             if (typeof propValue === 'function') {
                 (domNode as any)[propName] = () => propValue(joinedProps);

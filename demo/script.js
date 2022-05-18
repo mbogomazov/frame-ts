@@ -9,7 +9,7 @@ import {
 // eslint-disable-next-line require-jsdoc
 class AppComponent extends Component {
     template = `<div>
-        <h1>This is app component</h1>
+        <h1 class="red-box">This is app component</h1>
         <StateComponent name="state" />
     </div>`;
 
