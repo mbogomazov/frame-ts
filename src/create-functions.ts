@@ -44,6 +44,7 @@ export function createComponentNode(node: CompNode): FiberNode {
         effectTag: EffectTags.create,
         value: node.compConstructor,
         props: node.props,
+        componentName: node.componentName,
         children: [],
     };
     return functNode;
@@ -54,6 +55,7 @@ export function createComponentNode(node: CompNode): FiberNode {
  * @param {NodeTypes} type - type of node
  * @param {object} props - node properties
  * @param {Function} componentConstructor - constructor of class extending Component
+ * @param {string} componentName - name of component
  * @param {FiberNode[]} children - node children
  * @return {FiberNode} - node instance
  */
@@ -61,20 +63,26 @@ export function createNode(
     type: NodeTypes | string,
     props: PropsType,
     componentConstructor?: typeof Component,
+    componentName?: string,
     ...children: (FiberNode | string | Function | CompNode)[]
 ): FiberNode {
     const node: FiberNode = {
         type,
         props,
         value: componentConstructor,
+        componentName: componentName,
         effectTag: EffectTags.create,
         children: children.map(el => {
             if (typeof el === 'string') {
                 return createTextNode(el);
             } else if (typeof el === 'function') {
                 return createFuncNode(el);
-            } else if (typeof el === 'object' && 'compConstructor' in el) {
-                return createComponentNode(el);
+            } else if (
+                typeof el === 'object' &&
+                'componentName' in el &&
+                el.componentName
+            ) {
+                return createComponentNode(el as CompNode);
             } else {
                 return el;
             }
@@ -107,15 +115,13 @@ export function createDomNode(node: FiberNode): HTMLElement | Text {
         return computedTextDomNode;
     }
 
-    console.log(node.props, node);
     const domNode = document.createElement(node.type);
     if (node.props) {
         Object.entries(node.props).map(([propName, propValue]) => {
-            // TODO: fix it
             if (typeof propValue === 'string') {
                 domNode.setAttribute(propName, propValue);
-                console.log(domNode);
             }
+            // TODO: fix it
             if (typeof propValue === 'function') {
                 (domNode as any)[propName] = () => propValue(joinedProps);
             }
@@ -132,18 +138,4 @@ export function getParentClassComponentProps(node: FiberNode) {
     } else {
         return node.props;
     }
-    // let parentNode: FiberNode | undefined = node.parent;
-    // let parentComponentProps: PropsType = {};
-    // console.log(parentNode);
-    // while (parentNode && Object.keys(parentNode).length) {
-    //     if (
-    //         parentNode.parentComponentProps &&
-    //         Object.keys(parentNode.parentComponentProps).length
-    //     ) {
-    //         parentComponentProps = parentNode.parentComponentProps;
-    //         break;
-    //     }
-    //     parentNode = parentNode.parent;
-    // }
-    // return parentComponentProps;
 }

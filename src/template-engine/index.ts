@@ -10,6 +10,7 @@ type TagNodeType = {
     props: PropsType;
     children: TagNodeType[];
     isClosing?: boolean;
+    componentName?: string;
 };
 
 // eslint-disable-next-line require-jsdoc
@@ -112,6 +113,7 @@ export default function parseElement(
         if (imports && node.name in imports) {
             node.value = imports[node.name];
             node.type = 'component';
+            node.componentName = node.name;
         }
         node.isClosing = true;
         node.length = nodeLength;
@@ -122,7 +124,7 @@ export default function parseElement(
     template = template.slice(match.index! + cuttedSymbols + 1);
 
     let childNode = parseElement(template, node.name, imports);
-    while (!childNode.isClosing) {
+    while (!(childNode.type === 'element' && childNode.isClosing)) {
         template = template.slice(childNode.length);
         node.children.push(childNode);
         nodeLength += childNode.length;
@@ -220,20 +222,27 @@ function convertTagNodeToFiberNode(tagNode: TagNodeType): FiberNode {
         type: tagNode.name,
         props: tagNode.props,
         value: componentConstructor,
-        children: tagNode.children.map(node =>
+        componentName: tagNode.componentName,
+        children: tagNode.children.map((node: TagNodeType) =>
             ['funcValue', 'textValue'].includes(node.type)
                 ? node.value
                 : node.type === 'component'
-                ? ({compConstructor: node.value, props: node.props} as CompNode)
+                ? ({
+                      compConstructor: node.value,
+                      props: node.props,
+                      componentName: node.componentName,
+                  } as CompNode)
                 : convertTagNodeToFiberNode(node)
         ),
     };
-    return createNode(
+    const rootNode = createNode(
         convertedNode.type,
         convertedNode.props,
         componentConstructor,
+        convertedNode.componentName,
         ...convertedNode.children
     );
+    return rootNode;
 }
 
 // example of template
@@ -270,9 +279,3 @@ export function parseTemplate(
 // const templateStr = `
 // <div><App props="{props}" /></div>
 // `
-
-// console.log(
-//     parseTemplate(templateStr, {
-//         App: AppComponent,
-//     }).children[0].value
-// )

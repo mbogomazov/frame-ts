@@ -1,4 +1,5 @@
 import {createDomNode, getParentClassComponentProps} from '../create-functions';
+import {Router} from '../router';
 import {
     Component,
     EffectTags,
@@ -10,6 +11,7 @@ import {
 
 const queue: FiberNode[] = [];
 const nodesToDeleteFromDom: FiberNode[] = [];
+let router: Router | undefined;
 let componentProps: PropsType = {};
 let isWorking = false;
 const globalState: GlobalStateType = {
@@ -20,7 +22,6 @@ const globalState: GlobalStateType = {
     hookIndex: 0,
     addNodeToQueue: (node: FiberNode) => {
         queue.push(node);
-        console.log('called');
         if (!isWorking) requestIdleCallback(runJobQueue);
     },
 };
@@ -44,6 +45,7 @@ function render(element: FiberNode, container: HTMLElement, props: PropsType) {
                     children: element.children,
                     value: element.value,
                     props: element.props,
+                    componentName: element.componentName,
                     isClassComponent: true,
                 },
             ],
@@ -55,7 +57,7 @@ function render(element: FiberNode, container: HTMLElement, props: PropsType) {
             type: NodeTypes.unitOfWork,
             dom: container,
             value: element.value,
-            props: element.props,
+            props: {...props, ...element.props},
             effectTag: EffectTags.create,
             children: element.children,
             previousCommittedRootNode: globalState.currentRootNode,
@@ -208,7 +210,6 @@ function runJobQueue(deadline: IdleDeadline) {
 
         // we need add root node to DOM separately of creating DOM element
         // because it can take more time that we want
-        // console.log(globalState.uncommitedRootNode.hooks);
         if (globalState.uncommitedRootNode.firstChild) {
             workWithDom(globalState.uncommitedRootNode.firstChild);
         }
@@ -218,6 +219,12 @@ function runJobQueue(deadline: IdleDeadline) {
         }
         globalState.currentRootNode = mainRootNode;
         globalState.uncommitedRootNode = undefined;
+
+        // if
+        if (document.body.style.display === 'none') {
+            document.body.style.display = 'block';
+            router!.push('/');
+        }
     }
 }
 
@@ -275,6 +282,12 @@ function updateClassComponent(node: FiberNode) {
     node.children = node.children.length ? node.children : [component.render()];
     node.isClassComponent = true;
     node.parentComponent = node;
+    node.componentInstance = component;
+
+    if (router && Object.values(router.routes).includes(node.componentName!)) {
+        router.addComponentNode(node, node.componentName!);
+    }
+
     updateChildrenNode(node, node.children);
 }
 
@@ -303,6 +316,7 @@ function updateChildrenNode(node: FiberNode, children: FiberNode[]) {
                 parent: node,
                 isClassComponent: childNode.isClassComponent,
                 hooks: childNode.hooks,
+                componentInstance: childNode.componentInstance,
             };
             childNode.parentComponent =
                 childNode.parent && childNode.parent.isClassComponent
@@ -327,6 +341,8 @@ function updateChildrenNode(node: FiberNode, children: FiberNode[]) {
                 firstChild: childNode.firstChild,
                 sibling: childNode.sibling,
                 hooks: childNode.hooks,
+                componentName: childNode.componentName,
+                componentInstance: childNode.componentInstance,
             };
             childNode.parentComponent =
                 childNode.parent && childNode.parent.isClassComponent
@@ -346,6 +362,8 @@ function updateChildrenNode(node: FiberNode, children: FiberNode[]) {
                 parent: node,
                 hooks: childNode.hooks,
                 isClassComponent: childNode.isClassComponent,
+                componentName: childNode.componentName,
+                componentInstance: childNode.componentInstance,
             };
             childNode.parentComponent =
                 childNode.parent && childNode.parent.isClassComponent
@@ -376,10 +394,16 @@ function updateChildrenNode(node: FiberNode, children: FiberNode[]) {
 export function init(
     element: FiberNode,
     containerSelector: string,
-    props: PropsType
+    props: PropsType,
+    routerObj?: Router
 ) {
     const domContainer: HTMLElement | null =
         document.querySelector(containerSelector);
+    if (routerObj) {
+        router = routerObj;
+        // hide before router will select main component for '/' path
+        document.body.style.display = 'none';
+    }
     if (domContainer) {
         render(element, domContainer, props);
         requestIdleCallback(runJobQueue);

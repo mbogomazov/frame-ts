@@ -35,6 +35,8 @@ export type FiberNode = {
     hooks?: any[];
     isClassComponent?: boolean;
     parentComponent?: FiberNode;
+    componentName?: string;
+    componentInstance?: Component;
 };
 
 export type PropsType = {[key: string]: any};
@@ -49,8 +51,11 @@ export type GlobalStateType = {
 };
 
 export type CompNode = {
+    type: string;
+    children: FiberNode[];
     compConstructor: Function;
     props: PropsType;
+    componentName: string;
 };
 
 // eslint-disable-next-line require-jsdoc
