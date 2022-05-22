@@ -3,7 +3,6 @@ import {init, parseTemplate as html, Component, Router} from '../dist/index';
 const router = new Router({
     '/': 'App',
     '/about': 'About',
-    '/contacts': 'Contacts',
 });
 
 // eslint-disable-next-line require-jsdoc
@@ -17,7 +16,6 @@ class AppComponent extends Component {
     constructor(props) {
         super();
         this.props = props;
-        this.router = router;
         this.props.router = router;
     }
 
@@ -31,12 +29,14 @@ class AppComponent extends Component {
 class AboutComponent extends Component {
     template = `<div>
         <h1 class="green-box">This is about component</h1>
+        <p onclick="{props.router.push('/')}">App</p>
     </div>`;
 
     // eslint-disable-next-line require-jsdoc
     constructor(props) {
         super();
         this.props = props;
+        this.props.router = router;
     }
 
     // eslint-disable-next-line require-jsdoc
