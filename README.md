@@ -2,7 +2,7 @@
 
 # FRAME.ts
 
-### a simple frontend framework
+### a simple zero-dependency frontend framework
 
 ⚠️ WARNING! DO NOT USE IT IN PRODUCTION, ONLY FOR EDUCATIONAL PURPOSES ⚠️
 
