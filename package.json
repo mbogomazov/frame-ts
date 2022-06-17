@@ -4,14 +4,13 @@
   "description": "A simple frontend library",
   "source": "src/index.ts",
   "main": "dist/index.js",
-  "types": "dist/types.d.ts",
   "targets": {
     "main": {
       "optimize": true
     }
   },
   "scripts": {
-    "build": "parcel build",
+    "build": "parcel build --no-source-maps",
     "watch": "parcel watch",
     "demo": "parcel demo/index.html --dist-dir demo/dist",
     "parse": "npx ts-node src/template-engine/index.ts"
