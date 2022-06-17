@@ -172,7 +172,7 @@ function updateDomNode(node: FiberNode) {
                     if (node.dom) {
                         (node.dom as any)[propName] = (
                             currentProps[propName] as Function
-                        )(joinedProps);
+                        )(joinedProps)();
                     }
                 }
             });

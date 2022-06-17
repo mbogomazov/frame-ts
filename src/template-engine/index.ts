@@ -246,25 +246,11 @@ function convertTagNodeToFiberNode(tagNode: TagNodeType): FiberNode {
 }
 
 // example of template
-// const templateStr = `<template id="app" visible>
-//     <div>
-//         <h1>Hello, {props.name} {props.surname}, nice to meet you</h1>
-//         <div>
-//             <div>
-//                 <ul>
-//                     <li>1</li>
-//                     <li>2</li>
-//                     <li>3</li>
-//                     <li>4</li>
-//                 </ul>
-//             </div>
-//         </div>
-//     </div>
-//     <a href="https://google.com">
-//         <img src="john.png" alt="John's face"/>
-//     </a>
-// </template>
-// `
+const templateStr = `<div>
+    <p>Hello {props.name}</p>
+    <img src="{props.imageUrl}" />
+</div>
+`;
 
 // eslint-disable-next-line require-jsdoc
 export function parseTemplate(
@@ -279,3 +265,7 @@ export function parseTemplate(
 // const templateStr = `
 // <div><App props="{props}" /></div>
 // `
+
+console.log(
+    (parseTemplate(templateStr).children[1].props as any).src({imageUrl: 'url'})
+);
