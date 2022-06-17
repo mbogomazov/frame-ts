@@ -1,6 +1,6 @@
 {
   "name": "frame-ts",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A simple frontend library",
   "source": "src/index.ts",
   "main": "dist/index.js",
