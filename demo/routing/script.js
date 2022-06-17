@@ -1,4 +1,4 @@
-import {init, parseTemplate as html, Component, Router} from '../dist/index';
+import {init, parseTemplate as html, Component, Router} from '../../dist/index';
 
 const router = new Router({
     '/': 'App',

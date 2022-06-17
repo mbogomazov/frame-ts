@@ -142,13 +142,13 @@
       this[globalName] = mainExports;
     }
   }
-})({"2ON4u":[function(require,module,exports) {
+})({"jub5n":[function(require,module,exports) {
 "use strict";
 var HMR_HOST = null;
 var HMR_PORT = null;
 var HMR_SECURE = false;
 var HMR_ENV_HASH = "d6ea1d42532a7575";
-module.bundle.HMR_BUNDLE_ID = "95b2bc1931215c1b";
+module.bundle.HMR_BUNDLE_ID = "182fd8c390bee286";
 function _toConsumableArray(arr) {
     return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
 }
@@ -525,58 +525,60 @@ function hmrAcceptRun(bundle, id) {
     acceptedAssets[id] = true;
 }
 
-},{}],"6yKdW":[function(require,module,exports) {
-var _index = require("../dist/index");
+},{}],"Zor9e":[function(require,module,exports) {
+var _index = require("../../dist/index");
+const router = new _index.Router({
+    '/': 'App',
+    '/about': 'About'
+});
 // eslint-disable-next-line require-jsdoc
 class AppComponent extends _index.Component {
     template = `<div>
-        <h1>This is app component</h1>
-        <StateComponent name="state" />
-    </div>`;
-    // eslint-disable-next-line require-jsdoc
-    constructor(){
-        super();
-    }
-    // eslint-disable-next-line require-jsdoc
-    render() {
-        return _index.parseTemplate(this.template, {
-            StateComponent: StateComponent
-        });
-    }
-}
-// eslint-disable-next-line require-jsdoc
-class StateComponent extends _index.Component {
-    template = `<div>
-        <div>
-            <h1>Hello {props.name}</h1>
-            <p>The char is: {props.state.char}</p>
-            <p>The state is: {props.state.num}</p>
-        </div>
-        <button onclick="{props.setState(({char, num}) => ({num, char: String.fromCharCode(char.charCodeAt(0) + 1)}) )}" >Go to next char</button>
-        <button onclick="{props.setState(({char, num}) => ({num: num + 1, char}) )}" >Increment state</button>
+        <h1 class="red-box">This is app component</h1>
+        <p onclick="{props.router.push('/about')}">About</p>
     </div>`;
     // eslint-disable-next-line require-jsdoc
     constructor(props){
         super();
         this.props = props;
-        [this.props.state, this.props.setState] = _index.useState({
-            char: 'a',
-            num: 1
-        }, this.props.globalState);
+        this.props.router = router;
     }
     // eslint-disable-next-line require-jsdoc
     render() {
         return _index.parseTemplate(this.template);
     }
 }
-const rootElement = _index.parseTemplate('<App name="app component" />', {
-    App: AppComponent
+// eslint-disable-next-line require-jsdoc
+class AboutComponent extends _index.Component {
+    template = `<div>
+        <h1 class="green-box">This is about component</h1>
+        <p onclick="{props.router.push('/')}">App</p>
+    </div>`;
+    // eslint-disable-next-line require-jsdoc
+    constructor(props){
+        super();
+        this.props = props;
+        this.props.router = router;
+    }
+    // eslint-disable-next-line require-jsdoc
+    render() {
+        return _index.parseTemplate(this.template);
+    }
+}
+const rootElement = _index.parseTemplate(`
+<div>
+    <App router="{props.router}" />
+    <About />
+</div>
+`, {
+    App: AppComponent,
+    About: AboutComponent
 });
 _index.init(rootElement, '#app', {
-    name: 'App element'
-});
+    router
+}, router);
 
-},{"../dist/index":"7elyk"}],"7elyk":[function(require,module,exports) {
+},{"../../dist/index":"7elyk"}],"7elyk":[function(require,module,exports) {
 function e(e1, o1) {
     return Object.keys(o1).forEach(function(t1) {
         "default" === t1 || "__esModule" === t1 || e1.hasOwnProperty(t1) || Object.defineProperty(e1, t1, {
@@ -1024,6 +1026,6 @@ class M {
 }
 e(module.exports, t), e(module.exports, u), e(module.exports, n), e(module.exports, E), e(module.exports, L), e(module.exports, _);
 
-},{}]},["2ON4u","6yKdW"], "6yKdW", "parcelRequireb412")
+},{}]},["jub5n","Zor9e"], "Zor9e", "parcelRequireb412")
 
-//# sourceMappingURL=index.31215c1b.js.map
+//# sourceMappingURL=index.90bee286.js.map
