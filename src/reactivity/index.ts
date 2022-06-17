@@ -220,7 +220,6 @@ function runJobQueue(deadline: IdleDeadline) {
         globalState.currentRootNode = mainRootNode;
         globalState.uncommitedRootNode = undefined;
 
-        // if
         if (document.body.style.display === 'none') {
             document.body.style.display = 'block';
             router!.push('/');

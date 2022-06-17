@@ -3,7 +3,6 @@ import {FiberNode} from '../types';
 // eslint-disable-next-line require-jsdoc
 export class Router {
     routes: {[key: string]: string} = {};
-    history: {[key: string]: string}[] = [];
     private componentNodes: {[key: string]: FiberNode} = {};
 
     // eslint-disable-next-line require-jsdoc
@@ -17,12 +16,17 @@ export class Router {
 
     // eslint-disable-next-line require-jsdoc
     push(routeLink: string) {
-        window.history.pushState({routeLink}, `${routeLink}`, routeLink);
+        window.history.pushState({routeLink}, routeLink, routeLink);
         this.showMainComponent(routeLink);
     }
 
     // eslint-disable-next-line require-jsdoc
-    showMainComponent(routeLink: string) {
+    addComponentNode(node: FiberNode, componentName: string) {
+        this.componentNodes[componentName] = node;
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    private showMainComponent(routeLink: string) {
         const selectedComponentName = this.routes[routeLink];
         for (const childNode of this.componentNodes[selectedComponentName]
             .children) {
@@ -42,10 +46,5 @@ export class Router {
                 }
             }
         }
-    }
-
-    // eslint-disable-next-line require-jsdoc
-    addComponentNode(node: FiberNode, componentName: string) {
-        this.componentNodes[componentName] = node;
     }
 }

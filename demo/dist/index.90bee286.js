@@ -567,16 +567,14 @@ class AboutComponent extends _index.Component {
 }
 const rootElement = _index.parseTemplate(`
 <div>
-    <App router="{props.router}" />
+    <App />
     <About />
 </div>
 `, {
     App: AppComponent,
     About: AboutComponent
 });
-_index.init(rootElement, '#app', {
-    router
-}, router);
+_index.init(rootElement, '#app', {}, router);
 
 },{"../../dist/index":"7elyk"}],"7elyk":[function(require,module,exports) {
 function e(e1, o1) {

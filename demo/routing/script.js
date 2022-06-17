@@ -48,7 +48,7 @@ class AboutComponent extends Component {
 const rootElement = html(
     `
 <div>
-    <App router="{props.router}" />
+    <App />
     <About />
 </div>
 `,
@@ -58,11 +58,4 @@ const rootElement = html(
     }
 );
 
-init(
-    rootElement,
-    '#app',
-    {
-        router,
-    },
-    router
-);
+init(rootElement, '#app', {}, router);
